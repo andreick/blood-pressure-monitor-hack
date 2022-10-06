@@ -10,37 +10,46 @@ String sys;
 String dia;
 int hr;
 
+void pushBpmStartButton() // Emulate a push on start button
+{
+    digitalWrite(BPM_START_PIN, HIGH);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    digitalWrite(BPM_START_PIN, LOW);
+}
+
+void runBpm(void *params)
+{
+    TickType_t lastTicks = xTaskGetTickCount();
+    for (;;)
+    {
+        // The start button must be pressed twice to begin the measurement
+        pushBpmStartButton();
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+        pushBpmStartButton();
+
+        // Run every 2 minutes
+        vTaskDelayUntil(&lastTicks, 2 * MINUTE_MILLIS / portTICK_PERIOD_MS);
+    }
+}
+
 void setup()
 {
     pinMode(BPM_START_PIN, OUTPUT);
     Serial.begin(115200);
+
     Wire.begin(0x50, 21, 22, 400000); // I2C fast mode
     Wire.onReceive(receiveEvent);
+
+    xTaskCreate(runBpm, "Run BPM", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+    vTaskDelete(NULL); // Delete loop task
 }
 
-void pushBpmStartButton() // Emulates a push on start button
-{
-    digitalWrite(BPM_START_PIN, HIGH);
-    delay(100);
-    digitalWrite(BPM_START_PIN, LOW);
-}
-
-void startBpm() // The start button must be pressed twice to begin the measurement
-{
-    pushBpmStartButton();
-    delay(200);
-    pushBpmStartButton();
-}
-
-void loop()
-{
-    startBpm();
-    delay(2 * MINUTE_MILLIS); // Runs every 2 minutes
-}
+void loop() {} // Execution never get here
 
 int readData()
 {
-    Wire.read(); // Discards the memory address
+    Wire.read(); // Discard the memory address
     return Wire.read();
 }
 
