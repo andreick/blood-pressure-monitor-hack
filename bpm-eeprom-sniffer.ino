@@ -1,5 +1,10 @@
 #include <Wire.h>
 
+#define SECOND_MILLIS 1000
+#define MINUTE_MILLIS 60 * SECOND_MILLIS
+
+#define BPM_START_PIN 13
+
 byte numWritings;
 String sys;
 String dia;
@@ -7,18 +12,35 @@ int hr;
 
 void setup()
 {
+    pinMode(BPM_START_PIN, OUTPUT);
     Serial.begin(115200);
     Wire.begin(0x50, 21, 22, 400000); // I2C fast mode
     Wire.onReceive(receiveEvent);
 }
 
+void pushBpmStartButton() // Emulates a push on start button
+{
+    digitalWrite(BPM_START_PIN, HIGH);
+    delay(100);
+    digitalWrite(BPM_START_PIN, LOW);
+}
+
+void startBpm() // The start button must be pressed twice to begin the measurement
+{
+    pushBpmStartButton();
+    delay(200);
+    pushBpmStartButton();
+}
+
 void loop()
 {
+    startBpm();
+    delay(2 * MINUTE_MILLIS); // Runs every 2 minutes
 }
 
 int readData()
 {
-    Wire.read(); // Discard the memory address
+    Wire.read(); // Discards the memory address
     return Wire.read();
 }
 
