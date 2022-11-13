@@ -1,46 +1,43 @@
 #include <Wire.h>
 
-#define SECOND_MILLIS 1000
-#define MINUTE_MILLIS 60 * SECOND_MILLIS
-
-#define BPM_START_PIN 13
+#define BPM_POWER_PIN 13
 
 byte numWritings;
-String sys;
-String dia;
-int hr;
+String systolic;
+String diastolic;
+int heartRate;
 
 void setup()
 {
-    pinMode(BPM_START_PIN, OUTPUT);
+    pinMode(BPM_POWER_PIN, OUTPUT);
     Serial.begin(115200);
     Wire.begin(0x50, 21, 22, 400000); // I2C fast mode
     Wire.onReceive(receiveEvent);
 }
 
-void pushBpmStartButton() // Emulates a push on start button
+void pushBpmPowerButton() // Emulate a push on power button
 {
-    digitalWrite(BPM_START_PIN, HIGH);
+    digitalWrite(BPM_POWER_PIN, HIGH);
     delay(100);
-    digitalWrite(BPM_START_PIN, LOW);
+    digitalWrite(BPM_POWER_PIN, LOW);
 }
 
-void startBpm() // The start button must be pressed twice to begin the measurement
+void startBpm() // The power button must be pressed twice to begin the measurement
 {
-    pushBpmStartButton();
+    pushBpmPowerButton();
     delay(200);
-    pushBpmStartButton();
+    pushBpmPowerButton();
 }
 
 void loop()
 {
     startBpm();
-    delay(2 * MINUTE_MILLIS); // Runs every 2 minutes
+    delay(2 * 60 * 1000); // Run every 2 minutes
 }
 
 int readData()
 {
-    Wire.read(); // Discards the memory address
+    Wire.read(); // Discard the memory address
     return Wire.read();
 }
 
@@ -97,22 +94,22 @@ void receiveEvent(int numBytes)
         case 7:
         {
             int data = readData();
-            sys += hexToString(data);
+            systolic += hexToString(data);
             break;
         }
         case 8:
         {
             int data = readData();
-            dia += hexToString(data);
+            diastolic += hexToString(data);
             break;
         }
         case 9:
-            hr = readData();
+            heartRate = readData();
             break;
         case 10:
-            Serial.printf("Pressão sistólca: %s\n", sys);
-            Serial.printf("Pressão diastólica: %s\n", dia);
-            Serial.printf("Frequência cardíaca: %d\n", hr);
+            Serial.printf("Pressão sistólca: %s mmHg\n", systolic);
+            Serial.printf("Pressão diastólica: %s mmHg\n", diastolic);
+            Serial.printf("Frequência cardíaca: %d bpm\n", heartRate);
             numWritings = 0;
             break;
         }
